@@ -51,19 +51,90 @@ def from_gui_login(root):
 
 # --- Admin dashboard ---
 
+# gui/dashboard.py
+
+from database.db import get_db_connection
+from gui.dashboard import clear_window
+from gui.posts import open_posts_window
+from tkinter import messagebox, Tk, Frame, Label, Button, Entry
+
+# ---------------------- User Management Helper ----------------------
+
+class UserManager:
+    @staticmethod
+    def deactivate_user(conn, email):
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
+            user = cursor.fetchone()
+            if not user:
+                messagebox.showerror("Error", f"No user found with email: {email}")
+                return
+            if user["is_active"] == 0:
+                messagebox.showinfo("Info", f"User '{email}' is already deactivated")
+                return
+            cursor.execute("UPDATE users SET is_active = 0 WHERE email = ?", (email,))
+            conn.commit()
+            messagebox.showinfo("Success", f"User '{email}' has been deactivated.")
+        except Exception as e:
+            messagebox.showerror("Database Error", str(e))
+
+    @staticmethod
+    def reactivate_user(conn, email):
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
+            user = cursor.fetchone()
+            if not user:
+                messagebox.showerror("Error", f"No user found with email: {email}")
+                return
+            if user["is_active"] == 1:
+                messagebox.showinfo("Info", f"User '{email}' is already active")
+                return
+            cursor.execute("UPDATE users SET is_active = 1 WHERE email = ?", (email,))
+            conn.commit()
+            messagebox.showinfo("Success", f"User '{email}' has been reactivated.")
+        except Exception as e:
+            messagebox.showerror("Database Error", str(e))
+
+
+
 def show_admin_dashboard(root, admin_email):
     clear_window(root)
-    root.title("Admin Dashboard - User Management")
+    root.title("Admin Dashboard")
+    root.geometry("900x600")
 
-    main_frame = tk.Frame(root, padx=30, pady=30)
-    main_frame.pack(expand=True)
+    conn = get_db_connection()
 
-    tk.Label(main_frame, text="Admin Console", font=("Arial", 20, "bold"), fg="#8b0000").pack(pady=20)
-    tk.Label(main_frame, text=f"Logged in as: {admin_email}", font=("Arial", 10)).pack(pady=5)
+    main_frame = Frame(root, padx=20, pady=20)
+    main_frame.pack(expand=True, fill="both")
 
-    tk.Button(main_frame, text="View All Users", width=30, command=lambda: show_all_users_admin(root, admin_email)).pack(pady=5)
-    tk.Button(main_frame, text="Register New User", width=30, command=lambda: from_gui_login(root)).pack(pady=5)
-    tk.Button(main_frame, text="Logout", width=30, command=lambda: from_gui_login(root)).pack(pady=20)
+    Label(main_frame, text=f"Admin Dashboard - Logged in as {admin_email}",
+          font=("Arial", 16, "bold")).pack(pady=10)
+
+    Button(main_frame, text="Manage Users", width=30,
+           command=lambda: show_all_users_admin(root, conn)).pack(pady=5)
+    Button(main_frame, text="Manage Posts", width=30,
+           command=lambda: open_posts_window(root)).pack(pady=5)
+    # Button(main_frame, text="Notifications", width=30,
+    #        command=lambda: show_notifications_page(root, conn)).pack(pady=5)
+    Button(main_frame, text="Logout", width=30,
+           command=lambda: from_gui_login(root)).pack(pady=20)
+
+
+# def show_admin_dashboard(root, admin_email):
+#     clear_window(root)
+#     root.title("Admin Dashboard - User Management")
+
+#     main_frame = tk.Frame(root, padx=30, pady=30)
+#     main_frame.pack(expand=True)
+
+#     tk.Label(main_frame, text="Admin Console", font=("Arial", 20, "bold"), fg="#8b0000").pack(pady=20)
+#     tk.Label(main_frame, text=f"Logged in as: {admin_email}", font=("Arial", 10)).pack(pady=5)
+
+#     tk.Button(main_frame, text="View All Users", width=30, command=lambda: show_all_users_admin(root, admin_email)).pack(pady=5)
+#     tk.Button(main_frame, text="Register New User", width=30, command=lambda: from_gui_login(root)).pack(pady=5)
+#     tk.Button(main_frame, text="Logout", width=30, command=lambda: from_gui_login(root)).pack(pady=20)
 
 def show_all_users_admin(root, admin_email):
     clear_window(root)
